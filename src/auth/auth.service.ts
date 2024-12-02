@@ -61,7 +61,7 @@ export class AuthService extends PrismaClient implements OnModuleInit {
       };
     } catch (error) {
       throw new RpcException({
-        status: error.status || 500,
+        status: error.status,
         message: error.message,
       });
     }
