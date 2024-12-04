@@ -3,7 +3,7 @@ FROM node:21-alpine3.19 as deps
 
 WORKDIR /usr/src/app
 
-COPY package.json ./
+COPY package.json ./ 
 COPY package-lock.json ./
 
 RUN npm install
@@ -16,26 +16,32 @@ WORKDIR /usr/src/app
 #? Copiar de deps los node modules
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 
-#? Copiar todo el codigo fuente de la aplicacion
+#? Copiar todo el código fuente de la aplicación
 COPY . .
+
+#? Copiar la carpeta de Prisma para incluir el schema
+COPY prisma ./prisma
 
 RUN npm run build
 
-RUN npm ci -f --only=production && npm cache clean --force
+#? Generar cliente Prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
-RUN npx prisma generate
+#? Instalar solo las dependencias de producción
+RUN npm ci --only=production && npm cache clean --force
 
 #? Crear la imagen final de docker
 FROM node:21-alpine3.19 as prod
 
 WORKDIR /usr/src/app
+
+#? Copiar dependencias de producción
 COPY --from=build /usr/src/app/node_modules ./node_modules
 
-#? Copiar la carpeta de distribucion
+#? Copiar la carpeta de distribución
 COPY --from=build /usr/src/app/dist ./dist
 
 USER node
-
 
 EXPOSE 3000
 
